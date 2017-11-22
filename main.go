@@ -8,9 +8,12 @@ import (
 )
 
 func main() {
+
+	pings.DbConnect()
+
 	print("Running server at http://localhost:8000\n")
 	router := mux.NewRouter()
-    router.HandleFunc("/{deviceId}/{timestamp}", pings.CreateDevice).Methods("POST")
+    router.HandleFunc("/{deviceId}/{timestamp}", pings.CreateDevicePing).Methods("POST")
 	router.HandleFunc("/{deviceId}/{date}", pings.GetDeviceOnDate).Methods("GET")
 	router.HandleFunc("/{deviceId}/{from}/{to}", pings.GetDeviceDateRange).Methods("GET")
     router.HandleFunc("/all/{date}", pings.GetAllDevicesOnDate).Methods("GET")

@@ -4,15 +4,58 @@ import (
 	"net/http"
 	"encoding/json"
 	"github.com/gorilla/mux"
+	"os"
+	_ "github.com/joho/godotenv/autoload"
 	"database/sql"
-	"github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql"
+	"reflect"
+	"fmt"
+	"strconv"
 )
 
+var db *sql.DB 
+var err error
 
-func CreateDevice(w http.ResponseWriter, r *http.Request) {}
+func DbConnect() {
+	DbPass := os.Getenv("DB_PASS")
+	db, err = sql.Open("mysql", "root:" + DbPass + "@tcp(localhost:3306)/tanda_devices")
+	if err != nil {
+        panic(err.Error())    
+	}
+	
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err.Error())
+	} else {
+		print("\nConnected To Database!\n")
+	}
+}
+
+func CreateDevicePing(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	deviceName := params["deviceId"]
+	timestamp := params["timestamp"]
+	timestampInt,_ := strconv.ParseInt(timestamp, 10, 64)
+	_, err := db.Exec("INSERT INTO devices(device_name, timestamp) VALUES (?,?)", deviceName, timestampInt)
+	
+	if err != nil {
+		res := &HttpRes{
+			StatusCode: 400,
+		}
+		json.NewEncoder(w).Encode(res)
+	} else {
+		resSuccess := &HttpRes{
+			StatusCode: 200,
+		}
+	
+		json.NewEncoder(w).Encode(resSuccess)
+	}
+
+}
 
 func GetDeviceOnDate(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("mysql", "user:password@/dbname")
 	devices := make([]Device, 0)
 	device := &Device {
 		Id: "abc123",
@@ -33,13 +76,23 @@ func GetAllDevicesOnDate(w http.ResponseWriter, r *http.Request) {}
 func GetAllDevicesInDateRange(w http.ResponseWriter, r *http.Request) {}
 
 func GetAllDevices(w http.ResponseWriter, r *http.Request) {
-	devices := make([]Device, 0)
-	device := &Device {
-		Id: "abc123",
-		Timestamps: []int{123, 1234, 111},
+	// devices := make([]Device, 0)
+	// device := &Device {
+	// 	Id: "abc123",
+	// 	Timestamps: []int{123, 1234, 111},
+	// }
+	// devices = append(devices, *device)
+
+	err := db.QueryRow("SELECT * FROM devices")
+
+	if err != nil {
+		res := &HttpRes{
+			StatusCode: 400,
+		}
+		json.NewEncoder(w).Encode(res)
 	}
-	devices = append(devices, *device)
-	json.NewEncoder(w).Encode(devices)
+
+	//json.NewEncoder(w).Encode(devices)
 }
 
 func ClearData(w http.ResponseWriter, r *http.Request) {
