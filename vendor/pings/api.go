@@ -4,32 +4,10 @@ import (
 	"net/http"
 	"encoding/json"
 	"github.com/gorilla/mux"
-	"os"
 	_ "github.com/joho/godotenv/autoload"
-	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"strconv"
 )
-
-var db *sql.DB 
-var err error
-
-func DbConnect() {
-	DbPass := os.Getenv("DB_PASS")
-	db, err = sql.Open("mysql", "root:" + DbPass + "@tcp(localhost:3306)/tanda_devices")
-	if err != nil {
-        panic(err.Error())    
-	}
-	
-	// defer db.Close()
-
-	err = db.Ping()
-	if err != nil {
-		panic(err.Error())
-	} else {
-		print("\nConnected To Database!\n")
-	}
-}
 
 func checkErr(err error) {
     if err != nil {
@@ -37,12 +15,12 @@ func checkErr(err error) {
     }
 }
 
-func CreateDevicePing(w http.ResponseWriter, r *http.Request) {
+func (api *Api) CreateDevicePing(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	deviceName := params["deviceId"]
 	timestamp := params["timestamp"]
 	timestampInt, _ := strconv.ParseInt(timestamp, 10, 64)
-	stmt, err := db.Prepare("INSERT devices SET device_name=?,timestamp=?")
+	stmt, err := api.Db.Prepare("INSERT devices SET device_name=?,timestamp=?")
 	checkErr(err)
 	
 	_, err = stmt.Exec(deviceName, timestampInt)
@@ -53,19 +31,17 @@ func CreateDevicePing(w http.ResponseWriter, r *http.Request) {
 		}
 		json.NewEncoder(w).Encode(res)
 		checkErr(err)
-		db.Close()
 	} else {
 		resSuccess := &HttpRes{
 			StatusCode: 200,
 		}
 	
 		json.NewEncoder(w).Encode(resSuccess)
-		db.Close()
 	}
 
 }
 
-func GetDeviceOnDate(w http.ResponseWriter, r *http.Request) {
+func (api *Api) GetDeviceOnDate(w http.ResponseWriter, r *http.Request) {
 	devices := make([]Device, 0)
 	device := &Device {
 		Id: "abc123",
@@ -81,32 +57,49 @@ func GetDeviceOnDate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetDeviceDateRange(w http.ResponseWriter, r *http.Request) {}
-func GetAllDevicesOnDate(w http.ResponseWriter, r *http.Request) {}
-func GetAllDevicesInDateRange(w http.ResponseWriter, r *http.Request) {}
+func (api *Api) GetDeviceDateRange(w http.ResponseWriter, r *http.Request) {}
+func (api *Api) GetAllDevicesOnDate(w http.ResponseWriter, r *http.Request) {}
+func (api *Api) GetAllDevicesInDateRange(w http.ResponseWriter, r *http.Request) {}
 
-func GetAllDevices(w http.ResponseWriter, r *http.Request) {
-	// devices := make([]Device, 0)
-	// device := &Device {
-	// 	Id: "abc123",
-	// 	Timestamps: []int{123, 1234, 111},
-	// }
-	// devices = append(devices, *device)
+func (api *Api) GetAllDevices(w http.ResponseWriter, r *http.Request) {
 
-	err := db.QueryRow("SELECT * FROM devices")
+	rows, err := api.Db.Query("SELECT DISTINCT device_name FROM devices")
 
 	if err != nil {
 		res := &HttpRes{
 			StatusCode: 400,
 		}
+
 		json.NewEncoder(w).Encode(res)
+		checkErr(err)
 	}
 
-	//json.NewEncoder(w).Encode(devices)
+	defer rows.Close()
+
+	deviceNames := make([]string, 0)
+
+	for rows.Next() {
+		var deviceName string
+		rows.Scan(&deviceName)
+		deviceNames = append(deviceNames, deviceName)
+
+	}
+
+	json.NewEncoder(w).Encode(deviceNames)
+
 }
 
-func ClearData(w http.ResponseWriter, r *http.Request) {
+func (api *Api) ClearData(w http.ResponseWriter, r *http.Request) {
 	// delete all data from table
+	_, err := api.Db.Query("DELETE FROM devices")
+	if err != nil {
+		res := &HttpRes{
+			StatusCode: 400,
+		}
+
+		json.NewEncoder(w).Encode(res)
+		checkErr(err)
+	}
 	res := &HttpRes{
 		StatusCode: 200,
 	}
