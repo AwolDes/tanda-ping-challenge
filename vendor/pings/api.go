@@ -8,8 +8,6 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
-	"reflect"
-	"fmt"
 	"strconv"
 )
 
@@ -23,7 +21,7 @@ func DbConnect() {
         panic(err.Error())    
 	}
 	
-	defer db.Close()
+	// defer db.Close()
 
 	err = db.Ping()
 	if err != nil {
@@ -33,24 +31,36 @@ func DbConnect() {
 	}
 }
 
+func checkErr(err error) {
+    if err != nil {
+        panic(err)
+    }
+}
+
 func CreateDevicePing(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	deviceName := params["deviceId"]
 	timestamp := params["timestamp"]
-	timestampInt,_ := strconv.ParseInt(timestamp, 10, 64)
-	_, err := db.Exec("INSERT INTO devices(device_name, timestamp) VALUES (?,?)", deviceName, timestampInt)
+	timestampInt, _ := strconv.ParseInt(timestamp, 10, 64)
+	stmt, err := db.Prepare("INSERT devices SET device_name=?,timestamp=?")
+	checkErr(err)
+	
+	_, err = stmt.Exec(deviceName, timestampInt)
 	
 	if err != nil {
 		res := &HttpRes{
 			StatusCode: 400,
 		}
 		json.NewEncoder(w).Encode(res)
+		checkErr(err)
+		db.Close()
 	} else {
 		resSuccess := &HttpRes{
 			StatusCode: 200,
 		}
 	
 		json.NewEncoder(w).Encode(resSuccess)
+		db.Close()
 	}
 
 }
