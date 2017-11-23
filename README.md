@@ -1,5 +1,5 @@
 # tanda-ping-challenge
-A solution to [Tanda's ping challenge in Go](https://github.com/TandaHQ/work-samples/tree/master/pings%20(backend)) written in Go.
+A solution to [Tanda's ping challenge](https://github.com/TandaHQ/work-samples/tree/master/pings%20(backend)) written in Go.
 
 # Stack
 - Golang (using this as an excersise to learn the language)
