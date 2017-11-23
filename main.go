@@ -31,17 +31,17 @@ func main() {
 	db := api.Db
 
 	// Long lived connection
-	// Go actually prefers global variables
+	// Go prefers global variables
 	defer db.Close()
 	
 
 	print("Running server at http://localhost:8000\n")
 	router := mux.NewRouter()
+    router.HandleFunc("/all/{date}", api.GetAllDevicesOnDate).Methods("GET")
+	router.HandleFunc("/all/{from}/{to}", api.GetAllDevicesInDateRange).Methods("GET")
     router.HandleFunc("/{deviceId}/{timestamp}", api.CreateDevicePing).Methods("POST")
 	router.HandleFunc("/{deviceId}/{date}", api.GetDeviceOnDate).Methods("GET")
 	router.HandleFunc("/{deviceId}/{from}/{to}", api.GetDeviceDateRange).Methods("GET")
-    router.HandleFunc("/all/{date}", api.GetAllDevicesOnDate).Methods("GET")
-	router.HandleFunc("/all/{from}/{to}", api.GetAllDevicesInDateRange).Methods("GET")
 	router.HandleFunc("/devices", api.GetAllDevices).Methods("GET")
 	router.HandleFunc("/clear_data", api.ClearData).Methods("POST")
     log.Fatal(http.ListenAndServe(":8000", router))
