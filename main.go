@@ -31,7 +31,7 @@ func main() {
 	db := api.Db
 
 	// Long lived connection
-	// Go prefers global variables
+	// Go prefers global variables - it will close this connection when main() exits
 	defer db.Close()
 	
 
