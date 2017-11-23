@@ -14,6 +14,5 @@ type Device struct {
 type HttpRes struct {
 	Status      int    `json:"status"`
 	Description string `json:"description"`
-	Body        string `json:"body"`
 }
 
